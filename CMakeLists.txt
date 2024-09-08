@@ -39,9 +39,4 @@ set(MAIN_MODULE_INCLUDES ${PROJECT_SOURCE_DIR}/${INC_DIR} ${PROJECT_SOURCE_DIR}/
 setup_library(main_module ${SRC_DIR} "${MAIN_MODULE_INCLUDES}" Threads::Threads)
 
 # Executables
-setup_executable(test_001 main_module)
-
-## Definitions
-if(MSVC)
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-endif()
+setup_executable(martingale main_module)
