@@ -1,3 +1,4 @@
+// Dice Strategy Simulator - Jed Fakhfekh - https://github.com/ougi-washi
 #pragma once
 
 #include <stdlib.h>
@@ -36,6 +37,7 @@ namespace dss{
     };
     
     struct simulations_output {
+        f32 PNL;
         f32 average_final_balance;
         f32 max_reached_balance;
         f32 min_reached_balance;

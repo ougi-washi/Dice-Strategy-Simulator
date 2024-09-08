@@ -17,6 +17,7 @@ dss::state dss::make_state(const f32 balance, const f32 initial_bet){
 }
 
 b8 dss::run_strategy(dss::state &state, dss::strategy &strategy, std::vector<f32> &variables){
+    srand (time(NULL));
     if (dss::get_random() > .495f){
         state.win_streak++;
         state.lose_streak = 0;
@@ -57,9 +58,10 @@ dss::simulations_output dss::run_simulations(dss::state &state, dss::strategy &s
     std::mutex output_mutex = {};
     std::vector<dss::state> states(threads, state);
     std::vector<std::thread> thread_pool;
+    const f32 initial_balance = state.balance;
     for (u32 i = 0; i < threads; i++){
         dss::state& state = states[i];
-        thread_pool.push_back(std::thread([&sim_output, &state, &strategy, &variables, iterations = iterations, &output_mutex](){
+        thread_pool.push_back(std::thread([&sim_output, &state, &strategy, &variables, iterations = iterations, &initial_balance, &output_mutex](){
             dss::run_simulation(state, strategy, variables, iterations);
             std::lock_guard<std::mutex> guard(output_mutex);
             sim_output.average_final_balance += state.balance;
@@ -74,6 +76,10 @@ dss::simulations_output dss::run_simulations(dss::state &state, dss::strategy &s
             if (state.min_reached_balance < sim_output.min_reached_balance){
                 sim_output.min_reached_balance = state.min_reached_balance;
             }
+            sim_output.PNL += state.balance - initial_balance;
+#if DSS_DEBUG_STRATEGY
+            std::cout << "Thread: " << std::this_thread::get_id() << "| PNL: " << state.balance - initial_balance << "| Total PNL" << sim_output.PNL << std::endl;
+#endif
         }));
     }
     for (u32 i = 0; i < threads; i++){
@@ -108,7 +114,8 @@ std::string dss::state_to_string(const dss::state &state){
 }
 
 std::string dss::simulations_output_to_string(const dss::simulations_output &output){
-    return  "Average Final Balance: " + std::to_string(output.average_final_balance) + 
+    return  "PNL: " + std::to_string(output.PNL) +
+            "| Average Final Balance: " + std::to_string(output.average_final_balance) + 
             "| Max Reached Balance: " + std::to_string(output.max_reached_balance) +
             "| Min Reached Balance: " + std::to_string(output.min_reached_balance) +
             "| Average Max Reached Balance: " + std::to_string(output.average_max_reached_balance) +

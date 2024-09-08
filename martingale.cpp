@@ -5,11 +5,10 @@
 
 i32 main(i32 argc, const c8 *argv[]){
     
-    dss::state state = dss::make_state(10.f, 0.0001f);
-    
+    dss::state state = dss::make_state(10.f, 0.001f);
     std::vector<f32> martingale_variables = {
         2.f, // bet multiplier
-        0.0001f // initial bet
+        0.001f // initial bet
     };
     dss::strategy martingale_strategy = [](dss::state& state, std::vector<f32>& variables){
         const f32& bet_multiplier = variables[0];
@@ -22,7 +21,7 @@ i32 main(i32 argc, const c8 *argv[]){
         }
     };
     
-    dss::simulations_output output = dss::run_simulations(state, martingale_strategy, martingale_variables, 10000, 1000);
+    dss::simulations_output output = dss::run_simulations(state, martingale_strategy, martingale_variables, 1000, 100);
     std::cout << dss::simulations_output_to_string(output) << std::endl;
     return 0;
 }
