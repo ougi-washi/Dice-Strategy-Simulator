@@ -5,8 +5,8 @@
 
 #define INITIAL_BALANCE 10.f
 #define INITAL_BET INITIAL_BALANCE/1000000.f
-#define RUNS_COUNT 10
-#define SIMULATIONS_COUNT 1000000
+#define RUNS_COUNT 1000
+#define SIMULATIONS_COUNT 1000
 
 i32 main(i32 argc, const c8 *argv[]){
     
