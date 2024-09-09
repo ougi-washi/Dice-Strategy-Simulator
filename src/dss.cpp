@@ -13,6 +13,7 @@ dss::state dss::make_state(const f32 balance, const f32 initial_bet){
         state.max_reached_balance = balance;
         state.min_reached_balance = balance;
         state.bet = initial_bet;
+        state.initial_bet = initial_bet;
         return state;
 }
 
@@ -41,54 +42,76 @@ b8 dss::run_strategy(dss::state &state, dss::strategy &strategy, std::vector<f32
     return true;
 }
 
-void dss::run_simulation(dss::state &state, dss::strategy &strategy, std::vector<f32> &variables, const u32 iterations){
+dss::simulation_output dss::run_simulation(dss::state &state, dss::strategy &strategy, std::vector<f32> &variables, const u32 iterations){
+    dss::simulation_output sim_output = {};
     for (u32 i = 0; i < iterations; i++){
         const b8 output = run_strategy(state, strategy, variables);
+        sim_output.final_balance = state.balance;
+        sim_output.max_reached_balance = state.max_reached_balance;
+        sim_output.min_reached_balance = state.min_reached_balance;
 #if DSS_DEBUG_STRATEGY
         std::cout << "Iteration: " << i << " | " << dss::state_to_string(state) << std::endl;
 #endif
         if (!output){
-            return; // no more balance
+            break;
         }
     }
+    return sim_output;
 }
 
-dss::simulations_output dss::run_simulations(dss::state &state, dss::strategy &strategy, std::vector<f32> &variables, const u32 iterations, const u32 threads){
-    dss::simulations_output sim_output = {};
-    std::mutex output_mutex = {};
-    std::vector<dss::state> states(threads, state);
+dss::simulations_output dss::run_simulations(dss::state &state, dss::strategy &strategy, std::vector<f32> &variables, const u32 iterations, const u32 threads_count){
+    dss::simulations_output final_output = {};
+    //std::mutex output_mutex = {};
+    std::vector<dss::state> states(threads_count, state);
     std::vector<std::thread> thread_pool;
+    thread_pool.reserve(threads_count); 
+    std::vector<dss::simulation_output> sim_outputs = {};
+    sim_outputs.reserve(threads_count);
+    sim_outputs.resize(threads_count);
     const f32 initial_balance = state.balance;
-    for (u32 i = 0; i < threads; i++){
+    for (u32 i = 0; i < threads_count; i++){
         dss::state& state = states[i];
-        thread_pool.push_back(std::thread([&sim_output, &state, &strategy, &variables, iterations = iterations, &initial_balance, &output_mutex](){
-            dss::run_simulation(state, strategy, variables, iterations);
-            std::lock_guard<std::mutex> guard(output_mutex);
-            sim_output.average_final_balance += state.balance;
-            sim_output.average_max_reached_balance += state.max_reached_balance;
-            sim_output.average_min_reached_balance += state.min_reached_balance;
-            if (state.balance == 0){
-                sim_output.breaking_count++;
-            }
-            if (state.max_reached_balance > sim_output.max_reached_balance){
-                sim_output.max_reached_balance = state.max_reached_balance;
-            }
-            if (state.min_reached_balance < sim_output.min_reached_balance){
-                sim_output.min_reached_balance = state.min_reached_balance;
-            }
-            sim_output.PNL += state.balance - initial_balance;
+        dss::simulation_output& sim_output = sim_outputs[i];
+        thread_pool.push_back(std::thread([&sim_output, &state, &strategy, &variables, iterations = iterations, &initial_balance](){
+            sim_output = dss::run_simulation(state, strategy, variables, iterations);
+            // std::lock_guard<std::mutex> guard(output_mutex);
+
 #if DSS_DEBUG_STRATEGY
-            std::cout << "Thread: " << std::this_thread::get_id() << "| PNL: " << state.balance - initial_balance << "| Total PNL" << sim_output.PNL << std::endl;
+            std::cout << "Thread: " << std::this_thread::get_id() << "| PNL: " << state.balance - initial_balance << std::endl;
 #endif
         }));
     }
-    for (u32 i = 0; i < threads; i++){
+    for (u32 i = 0; i < threads_count; i++){
         thread_pool[i].join();
     }
-    sim_output.average_final_balance /= threads;
-    sim_output.average_max_reached_balance /= threads;
-    sim_output.average_min_reached_balance /= threads;
-    return sim_output;
+
+    final_output.PNL = 0.f;
+    final_output.breaking_count = 0;
+    final_output.max_reached_balance = initial_balance;
+    final_output.min_reached_balance = initial_balance;
+    final_output.average_final_balance = 0.f;
+    final_output.average_max_reached_balance = 0.f;
+    final_output.average_min_reached_balance = 0.f;
+    
+    for (u32 i = 0; i < threads_count; i++){
+        final_output.PNL += sim_outputs[i].final_balance - initial_balance;
+        final_output.average_final_balance += sim_outputs[i].final_balance;
+        final_output.average_max_reached_balance += sim_outputs[i].max_reached_balance;
+        final_output.average_min_reached_balance += sim_outputs[i].min_reached_balance;
+        if (sim_outputs[i].max_reached_balance > final_output.max_reached_balance){
+            final_output.max_reached_balance = sim_outputs[i].max_reached_balance;
+        }
+        if (sim_outputs[i].min_reached_balance < final_output.min_reached_balance){
+            final_output.min_reached_balance = sim_outputs[i].min_reached_balance;
+        }
+        if (sim_outputs[i].final_balance == 0){
+            final_output.breaking_count++;
+        }
+    }
+    final_output.average_final_balance /= threads_count;
+    final_output.average_max_reached_balance /= threads_count;
+    final_output.average_min_reached_balance /= threads_count;
+    return final_output;
 }
 
 f32 dss::get_random(){

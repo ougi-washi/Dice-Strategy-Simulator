@@ -32,10 +32,17 @@ namespace dss{
         f32 max_reached_balance;
         f32 min_reached_balance;
         f32 bet;
+        f32 initial_bet;
         u32 win_streak;
         u32 lose_streak;
     };
     
+    struct simulation_output {
+        f32 final_balance;
+        f32 max_reached_balance;
+        f32 min_reached_balance;
+    };
+
     struct simulations_output {
         f32 PNL;
         f32 average_final_balance;
@@ -50,8 +57,8 @@ namespace dss{
 
     dss::state make_state(const f32 balance, const f32 initial_bet);
     b8 run_strategy(dss::state& state, dss::strategy& strategy, std::vector<f32>& variables);
-    void run_simulation(dss::state& state, dss::strategy& strategy, std::vector<f32>& variables, const u32 iterations);
-    dss::simulations_output run_simulations(dss::state& state, dss::strategy& strategy, std::vector<f32>& variables, const u32 iterations, const u32 threads);
+    dss::simulation_output run_simulation(dss::state& state, dss::strategy& strategy, std::vector<f32>& variables, const u32 iterations);
+    dss::simulations_output run_simulations(dss::state& state, dss::strategy& strategy, std::vector<f32>& variables, const u32 iterations, const u32 threads_count);
 
     f32 get_random();
     std::string balance_to_string(const dss::state& state);
