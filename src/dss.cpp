@@ -19,7 +19,7 @@ dss::state dss::make_state(const f32 balance, const f32 initial_bet){
 
 b8 dss::run_strategy(dss::state &state, dss::strategy &strategy, std::vector<f32> &variables){
     srand (time(NULL));
-    if (dss::get_random() > .495f){
+    if (dss::get_random() < .495f){
         state.win_streak++;
         state.lose_streak = 0;
         state.balance += state.bet;
