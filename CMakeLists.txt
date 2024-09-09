@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(INC_DIR "include")
 set(SRC_DIR "src")
 set(BIN_DIR "bin")
+set(STRATS_DIR "strats")
 
 # setup library macro
 macro(setup_library arg_lib_name arg_source_path arg_include_path)
@@ -23,13 +24,12 @@ macro(setup_library arg_lib_name arg_source_path arg_include_path)
 endmacro()
 
 # setup executable macro
-macro(setup_executable arg_exec_name modules)
+macro(setup_executable arg_exec_dir arg_exec_name modules)
 	message(STATUS "Generating executable ${arg_exec_name}")
-    add_executable(${arg_exec_name} "${arg_exec_name}.cpp")
+    add_executable(${arg_exec_name} "${arg_exec_dir}/${arg_exec_name}.cpp")
     target_link_libraries(${arg_exec_name} PUBLIC main_module)
     set_target_properties(${arg_exec_name} PROPERTIES
-                          RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/${BIN_DIR})
-    
+                        	RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/${BIN_DIR})
 endmacro()
 
 find_package(Threads REQUIRED)
@@ -39,4 +39,11 @@ set(MAIN_MODULE_INCLUDES ${PROJECT_SOURCE_DIR}/${INC_DIR} ${PROJECT_SOURCE_DIR}/
 setup_library(main_module ${SRC_DIR} "${MAIN_MODULE_INCLUDES}" Threads::Threads)
 
 # Executables
-setup_executable(martingale main_module)
+file(GLOB STRATEGIES	"${STRATS_DIR}/*.c" 
+						"${STRATS_DIR}/*.cpp"
+						"${STRATS_DIR}/**/*.c" 
+						"${STRATS_DIR}/**/*.cpp")
+foreach(STRATEGY ${STRATEGIES})
+	get_filename_component(STRATEGY_NAME ${STRATEGY} NAME_WE)
+	setup_executable(${STRATS_DIR} ${STRATEGY_NAME} main_module)
+endforeach()
