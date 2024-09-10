@@ -1,6 +1,7 @@
 // Dice Strategy Simulator - Jed Fakhfekh - https://github.com/ougi-washi
 #pragma once
 
+#include "types.h"
 #include <stdlib.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -11,21 +12,6 @@
 #include <string>
 #include <mutex>
 
-typedef int8_t i8;
-typedef int16_t i16;
-typedef int32_t i32;
-typedef int64_t i64;
-typedef uint8_t u8;
-typedef uint16_t u16;
-typedef uint32_t u32;
-typedef uint64_t u64;
-typedef float f32;
-typedef double f64;
-typedef char c8;
-typedef wchar_t c16;
-typedef bool b8;
-typedef size_t sz;
-
 namespace dss{
     struct state {
         f32 balance;
@@ -33,6 +19,7 @@ namespace dss{
         f32 min_reached_balance;
         f32 bet;
         f32 initial_bet;
+        f32 win_chance;
         u32 win_streak;
         u32 lose_streak;
     };
@@ -41,6 +28,7 @@ namespace dss{
         f32 final_balance;
         f32 max_reached_balance;
         f32 min_reached_balance;
+        std::vector<f32> balance_data;
     };
 
     struct simulations_output {
@@ -57,10 +45,16 @@ namespace dss{
 
     dss::state make_state(const f32 balance, const f32 initial_bet);
     b8 run_strategy(dss::state& state, dss::strategy& strategy, std::vector<f32>& variables);
-    dss::simulation_output run_simulation(dss::state& state, dss::strategy& strategy, std::vector<f32>& variables, const u32 iterations);
-    dss::simulations_output run_simulations(dss::state& state, dss::strategy& strategy, std::vector<f32>& variables, const u32 iterations, const u32 threads_count);
+    void run_simulation(dss::simulation_output& output, dss::state& state, dss::strategy& strategy, std::vector<f32>& variables, const u32 iterations);
+    dss::simulations_output run_simulations(dss::state& state, dss::strategy& strategy, std::vector<f32>& variables, const u32 iterations, const u32 threads_count, const b8 draw_curve = true);
 
     f32 get_random();
+    f32 calculate_multiplier(f32 win_chance, f32 house_edge = 1.0);
+
+    void set_bet(dss::state& state, const f32 bet);
+    void reset_bet_to_initial(dss::state& state);
+    void set_win_chance(dss::state& state, const f32 win_chance);
+    void reset_win_chance(dss::state& state);
     std::string balance_to_string(const dss::state& state);
     std::string state_to_string(const dss::state& state);
     std::string simulations_output_to_string(const dss::simulations_output& output);
