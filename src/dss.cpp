@@ -146,7 +146,8 @@ std::vector<f32> calculate_average_movement(const std::vector<dss::simulation_ou
     size_t data_size = sim_outputs[0].balance_data.size();
     std::vector<f32> average_movement(data_size, 0.0f);
     for (const auto &sim_output : sim_outputs) {
-        for (size_t i = 0; i < sim_output.balance_data.size(); ++i) {
+        sz parsing_size = std::min(average_movement.size(), sim_output.balance_data.size());
+        for (size_t i = 0; i < parsing_size; ++i) {
             average_movement[i] += sim_output.balance_data[i];
         }
     }
@@ -213,8 +214,8 @@ dss::simulations_output dss::run_simulations(dss::state &state, dss::strategy &s
 
     if (draw_curve){
         std::vector<f32> average_movement = calculate_average_movement(sim_outputs);
-        std::vector<f32> downsampled_data = downsample_data(average_movement, DSS_CURVE_WIDTH);
-        dss::draw_curve(downsampled_data, DSS_CURVE_HEIGHT);
+        // std::vector<f32> downsampled_data = downsample_data(average_movement, DSS_CURVE_WIDTH);
+        dss::draw_curve(average_movement, DSS_CURVE_HEIGHT);
     }
     
     return final_output;
